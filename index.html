@@ -1,111 +1,63 @@
-<!DOCTYPE html>
-<html lang="en-us">
+<script>
+    var canvas = document.querySelector("#unity-canvas");
+    var myGameInstance = null; // Définition de la variable globale
 
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<title>Snake</title>
-	<style>
-		html,
-		body {
-			background: #000;
-			width: 100%;
-			height: 100%;
-			overflow: visible;
-			padding: 0;
-			margin: 0;
-		}
+    var config = {
+        dataUrl: "Build/Build.data",
+        frameworkUrl: "Build/Build.framework.js",
+        codeUrl: "Build/Build.wasm",
+        memoryUrl: "Build/",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "DefaultCompany",
+        productName: "Snake",
+        productVersion: "1.0",
+        backgroundColor: "#314D79",
+        useWebGL2: true,
+    };
 
-		div#gameContainer {
-			background: transparent !important;
-			position: absolute;
-			background-color: #314D79; /* Ajout du fond pour éviter les fonds noirs */
-		}
+    function progressHandler(progress) {
+        var percent = progress * 100 + '%';
+        canvas.style.background = 'linear-gradient(to right, white, white ' + percent + ', transparent ' + percent + ', transparent) no-repeat center';
+        canvas.style.backgroundSize = '100% 1rem';
+    }
 
-		div#gameContainer canvas {
-			position: absolute;
-		}
-	</style>
-</head>
+    let resizeTimeout;
+    function onResize() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            var container = canvas.parentElement;
+            var w = window.innerWidth;
+            var h = window.innerHeight;
+            container.style.width = w + "px";
+            container.style.height = h + "px";
+            canvas.style.width = "100%";
+            canvas.style.height = "100%";
 
-<body>
-	<div id="gameContainer">
-		<canvas id="unity-canvas" style="width: 100%; height: 100%"></canvas>
-		<script src="Build/Build.loader.js"></script>
-		<script>
-			var canvas = document.querySelector("#unity-canvas");
-			var config = {
-				dataUrl: "Build/Build.data",
-				frameworkUrl: "Build/Build.framework.js",
-				codeUrl: "Build/Build.wasm",
-				memoryUrl: "Build/",
-				streamingAssetsUrl: "StreamingAssets",
-				companyName: "DefaultCompany",
-				productName: "Snake",
-				productVersion: "1.0",
-				backgroundColor: "#314D79", // Modifié pour la couleur de fond
-				useWebGL2: true,
-			};
+            if (myGameInstance && myGameInstance.Module) {
+                window.requestAnimationFrame(function() {
+                    myGameInstance.Module.canvas.width = w;
+                    myGameInstance.Module.canvas.height = h;
+                    myGameInstance.SendMessage('GameManager', 'OnScreenResize', w + "," + h);
+                });
+            }
+        }, 15);
+    }
 
-			var scaleToFit;
-			try {
-				scaleToFit = !!JSON.parse("");
-			} catch (e) {
-				scaleToFit = true;
-			}
+    // ✅ Assigne l'instance de Unity à `myGameInstance`
+    createUnityInstance(canvas, config, progressHandler).then(function (instance) {
+        myGameInstance = instance; // 🔥 Stocke l'instance ici !
+        canvas = instance.Module.canvas;
+        onResize();
 
-			function progressHandler(progress) {
-				var percent = progress * 100 + '%';
-				canvas.style.background = 'linear-gradient(to right, white, white ' + percent + ', transparent ' + percent + ', transparent) no-repeat center';
-				canvas.style.backgroundSize = '100% 1rem';
-			}
+        // Change la couleur de fond
+        document.body.style.backgroundColor = "#314D79";
+        canvas.style.backgroundColor = "#314D79";
 
-			let resizeTimeout;
+        console.log("Unity chargé !");
+    }).catch(function (error) {
+        console.error("Erreur de chargement Unity : ", error);
+    });
 
-			function onResize() {
-				clearTimeout(resizeTimeout);
-				resizeTimeout = setTimeout(function() {
-					var container = canvas.parentElement;
-					var w = window.innerWidth;
-					var h = window.innerHeight;
-					container.style.width = w + "px";
-					container.style.height = h + "px";
-					canvas.style.width = "100%";
-					canvas.style.height = "100%";
-
-					if (myGameInstance && myGameInstance.Module) {
-						window.requestAnimationFrame(function() {
-							myGameInstance.Module.canvas.width = w;
-							myGameInstance.Module.canvas.height = h;
-							myGameInstance.SendMessage('GameManager', 'OnScreenResize', w + "," + h);
-						});
-					}
-				}, 15); // 15ms de délai avant le redimensionnement effectif
-			}
-
-			createUnityInstance(canvas, config, progressHandler).then(function (instance) {
-    canvas = instance.Module.canvas;
+    window.addEventListener('resize', onResize);
     onResize();
-
-    // Modifie la couleur de fond directement sur le body ou le container
-    document.body.style.backgroundColor = "#314D79";  // Applique la couleur à la page entière
-    canvas.style.backgroundColor = "#314D79";  // Applique la couleur au canvas
-});
-
-			
-
-			window.addEventListener('resize', onResize);
-			onResize();
-
-			if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-				// Mobile device style: fill the whole browser client area with the game canvas:
-				const meta = document.createElement('meta');
-				meta.name = 'viewport';
-				meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-				document.getElementsByTagName('head')[0].appendChild(meta);
-			}
-		</script>
-	</div>
-</body>
-
-</html>
+</script>
