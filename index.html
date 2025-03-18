@@ -56,6 +56,7 @@
             }
 
             var myGameInstance = null; // Globally scoped
+            var mobileDetectionComplete = false; // Flag pour la détection mobile
 
             function progressHandler(progress) {
                 var percent = progress * 100 + '%';
@@ -90,7 +91,15 @@
                 var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                 if (myGameInstance) {
                     myGameInstance.SendMessage('GameManager', 'OnMobileDetected', isMobile.toString());
+                    mobileDetectionComplete = true; // Détection terminée
                 }
+            }
+
+            function startGame() {
+                // Appliquer la couleur de fond
+                document.body.style.backgroundColor = "#314D79";
+                canvas.style.backgroundColor = "#314D79";
+                // Démarrer le jeu ici si nécessaire
             }
 
             createUnityInstance(canvas, config, progressHandler).then(function(instance) {
@@ -99,9 +108,13 @@
                 onResize();
                 detectMobile(); // Call after instance is ready
 
-                // Apply background color
-                document.body.style.backgroundColor = "#314D79";
-                canvas.style.backgroundColor = "#314D79";
+                // Attendre que la détection mobile soit terminée avant de démarrer le jeu
+                var checkMobileDetection = setInterval(function() {
+                    if (mobileDetectionComplete) {
+                        clearInterval(checkMobileDetection);
+                        startGame();
+                    }
+                }, 50); // Vérifier toutes les 50ms
             });
 
             window.addEventListener('resize', onResize);
